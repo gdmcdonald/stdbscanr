@@ -15,7 +15,7 @@ The goal of stdbscanr is to find clusters in trajectory data in x, y, and t, suc
 You can install the released version of stdbscanr from my github repo with:
 
 ``` r
-install.pakages("devtools")
+install.packages("devtools")
 devtools::install_github("gdmcdonald/stdbscanr")
 ```
 
