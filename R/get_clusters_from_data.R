@@ -225,13 +225,13 @@ find_equilibrium_clusters <- function(clusters){
 #'                 X = rnorm(100),
 #'                 Y = rnorm(100),
 #'                 timestamp = 1:100)
-#' get_clusters_from_data <- function(dt
-#'                                   ,x = "X"
-#'                                   ,y = "Y"
-#'                                   ,t = "timestamp"
-#'                                   ,eps = 2 # 2 metre distance threshold from other point
-#'                                   ,eps_t = 10 # 10 second time threshold from other point
-#'                                   ,minpts = 3) # minimum connected to 3 points to continue growing a cluster
+#' get_clusters_from_data(dt
+#'                        ,x = "X"
+#'                        ,y = "Y"
+#'                        ,t = "timestamp"
+#'                        ,eps = 2 # 2 metre distance threshold from other point
+#'                        ,eps_t = 10 # 10 second time threshold from other point
+#'                        ,minpts = 3) # minimum connected to 3 points to continue growing a cluster
 get_clusters_from_data <- function(df
                                    ,x = "X"
                                    ,y = "Y"
@@ -304,7 +304,7 @@ get_clusters_from_data <- function(df
                                          by.y = "id",
                                          all.x = T)
 
-  return(df_out)
+  return(df_out[,id:=NULL])
 }
 
 
