@@ -2,7 +2,7 @@
 # stdbscanr
 
 <!-- badges: start -->
-![Output plot of the simple example below](img/simple_example.jpg)
+![Output plot of the simple example below](img/simple_example.png)
 <!-- badges: end -->
 
 The goal of stdbscanr is to find clusters in trajectory data in x, y, and t, using the ST-DBSCAN clustering algorithm, such that
@@ -66,7 +66,7 @@ ggplot(out,
        subtitle = "minpts = 3, eps = 1, eps_t = 5")
 ```
 
-![Output plot of the example code above](img/simple_example.jpg)
+![Output plot of the example code above](img/simple_example.png)
 
 
 [For a more complicated example clustering my google location history trajectory, look here:](https://gdmcdonald.github.io/stdbscanr/google_location_example.html)
