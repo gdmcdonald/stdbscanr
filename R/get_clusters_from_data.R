@@ -275,8 +275,8 @@ get_clusters_from_data <- function(df
 
 
   #work out core and terminating points for debugging
-  core_pts = reachables_without_noise$first
-  terminating_pts = setdiff(reachables_without_noise$second, core_pts)
+  core_pts = unique(reachables_without_noise$first)
+  terminating_pts = setdiff(unique(reachables_without_noise$second), core_pts)
   point_type = data.table(point = c(core_pts,
                                     terminating_pts),
                           type = c(rep("core", length(core_pts)),
