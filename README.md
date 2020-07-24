@@ -2,6 +2,7 @@
 # stdbscanr
 
 <!-- badges: start -->
+![Output plot of the simple example below](img/simple_example.jpg)
 <!-- badges: end -->
 
 The goal of stdbscanr is to find clusters in trajectory data in x, y, and t, using the ST-DBSCAN clustering algorithm, such that
