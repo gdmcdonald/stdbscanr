@@ -7,6 +7,10 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r loadLibraries, warning=FALSE, message=F}
 library(data.table)
 library(tidyverse)
 library(stdbscanr)
@@ -20,7 +24,7 @@ Example to cluster a random day in Feb 2017 of my Google location history's traj
 
 Read in my location history as a .csv, and set time column to be a datetime.
 ```{r}
-location_data <- fread("location.csv")[
+location_data <- fread("https://raw.githubusercontent.com/gdmcdonald/stdbscanr/master/docs/location.csv")[
   ,time := ymd_hms(`time`)]
 #order by time
 setkey(location_data,time)
@@ -41,7 +45,7 @@ unique(location_data[,.(name,category)])
 
 # Get clusters
 
-Get each visit to a place as a space-time cluster
+Get each visit to a place as a space-time cluster. Each point must be no more than ~50m away from any it is connected to and within 10 minutes.
 ```{r}
 location_with_visits <- 
   get_clusters_from_data(df = location_data,
