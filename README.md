@@ -68,7 +68,7 @@ ggplot(out,
 ![Output plot of the example code above](img/simple_example.jpg)
 
 
-[For a more complicated example clustering my google location history trajectory, look here:](https://pages.github.com/google_location_example.html)
+[For a more complicated example clustering my google location history trajectory, look here:](https://gdmcdonald.github.io/stdbscanr/google_location_example.html)
 
 ![Leaflet map of clustering google location history](img/location_history.jpg)
 
