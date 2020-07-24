@@ -329,6 +329,11 @@ get_clusters_from_data <- function(df
                                          by.y = "id",
                                          all.x = T)
 
+  # test we get one row out per row in...
+  if (nrow(df_out)!=nrow(df)){
+    warning("Incorrect number of rows output - need to debug!")
+    }
+
   return(df_out[,id:=NULL])
 }
 
