@@ -273,6 +273,15 @@ get_clusters_from_data <- function(df
   reachables_without_noise <- remove_noise(reachables = reachables,
                                            min_number = minpts)
 
+
+  #work out core and terminating points for debugging
+  core_pts = reachables_without_noise$first
+  terminating_pts = setdiff(reachables_without_noise$second, core_pts)
+  point_type = data.table(point = c(core_pts,
+                                    terminating_pts),
+                          type = c(rep("core", length(core_pts)),
+                                   rep("terminating", length(terminating_pts))))
+
   # initially set cluster_id to first index
   clusters <- reachables_without_noise[,cluster:=first]
 
@@ -298,7 +307,13 @@ get_clusters_from_data <- function(df
                                        by.y = "point_id",
                                        all.x = T)
 
-  df_out <- data.table::merge.data.table(x = temp,
+  temp2 <- data.table::merge.data.table(x = temp,
+                                        y = point_type,
+                                        by.x = "id",
+                                        by.y = "point",
+                                        all.x = T)
+
+  df_out <- data.table::merge.data.table(x = temp2,
                                          y = point_density,
                                          by.x = "id",
                                          by.y = "id",
