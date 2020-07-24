@@ -20,7 +20,7 @@ This implementation leverages sorted time data and only computes spatial distanc
 
 ## Installation
 
-You can install the released version of stdbscanr from my github repo with:
+You can install the released version of stdbscanr [from my github](https://github.com/gdmcdonald/stdbscanr) repo with:
 
 ``` r
 install.packages("devtools")
@@ -40,7 +40,7 @@ dt <- data.table(X = rnorm(20),
                  Y = rnorm(20),
                  timestamp = 1:20)
 
-# find clusters and density in it
+# find clusters and density in the data
 out <- get_clusters_from_data(dt
                               ,x = "X"
                               ,y = "Y"
@@ -50,7 +50,7 @@ out <- get_clusters_from_data(dt
                               ,minpts = 3)[  # minimum connected to 3 points to continue growing a cluster
                                 ,cluster:=factor(cluster)] # make clusters a factor 
 
-#plot clusters output
+# plot clusters
 ggplot(out, 
        aes(x = X, 
            y = Y, 
@@ -66,4 +66,9 @@ ggplot(out,
 ```
 
 ![Output plot of the example code above](img/simple_example.jpg)
+
+
+[For a more complicated example clustering my google location history trajectory, look here:](https://pages.github.com/google_location_example.html)
+
+![Leaflet map of clustering google location history](img/location_history.jpg)
 
