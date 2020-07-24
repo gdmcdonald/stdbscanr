@@ -1,0 +1,150 @@
+---
+title: "Example Clustering of Google Location History"
+author: "Dr. Gordon McDonald"
+date: "24/07/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(data.table)
+library(tidyverse)
+library(stdbscanr)
+library(lubridate)
+library(leaflet)
+```
+
+Example to cluster a random day in Feb 2017 of my Google location history's trajectory, using stdbclust.
+
+# Read location history
+
+Read in my location history as a .csv, and set time column to be a datetime.
+```{r}
+location_data <- fread("location.csv")[
+  ,time := ymd_hms(`time`)]
+#order by time
+setkey(location_data,time)
+#calc time intervals between points
+location_data[,time_inc := as.numeric(time - shift(time), 
+                                      units = "mins")]
+```
+
+A small sample of the data looks like this:
+```{r}
+location_data[699:708,]
+```
+
+The data helpfully comes with labels attached by google but we won't look at these for clustering:
+```{r}
+unique(location_data[,.(name,category)])
+```
+
+# Get clusters
+
+Get each visit to a place as a space-time cluster
+```{r}
+location_with_visits <- 
+  get_clusters_from_data(df = location_data,
+                         x = "longitude", 
+                         y = "latitude", 
+                         t = "time",
+                         eps = 0.0005, #0.0005 latitude/longitude ~ 50m either way in sydney
+                         eps_t = 10, #10 min
+                         minpts = 10)
+
+setnames(location_with_visits, old = "cluster", new = "visit") #rename cluster to visit
+```
+
+# Visit Summary
+
+Make a summary table of visits
+```{r}
+#Define a mode function to get the most common label
+mode <- function(x) { names(which.max(table(x))) }
+
+#data.table summary table of visits
+visits <-                                   # dplyr equivalents:
+  location_with_visits[     
+    !is.na(visit),                          # filter(!is.na(visit))
+    .(n = .N,                               # summarise(n = n(),
+      latitude = mean(latitude),            #          latitude = mean(latitude),
+      longitude = mean(longitude),          #          longitude = mean(longitude),
+      time_spent = sum(time_inc,na.rm = T), #          time_spent = sum(time_inc),
+      google_label = mode(name)             #          google_label = mode(name))
+    ),    
+    by=visit]                               # group_by(visit)
+```
+
+Let's have a look at the clusters we've found:
+```{r}
+visits[,.(visit, google_label, latitude, longitude, time_spent)]
+```
+(and no, I don't live there any more!)
+
+# Cluster visits together into places
+
+To do this, we will abuse stdbclust to do dbclust on the visits, in order to group together visits that are in the same place. This requires creating a copy of longitude and stuffing it in instead of time.
+```{r}
+places <- 
+  get_clusters_from_data(
+    df = visits[,lon2:=longitude],
+    x = "longitude", 
+    y = "latitude", 
+    t = "lon2",
+    eps = 0.002, #0.002 latitude/longitude ~ 200m either way in sydney
+    eps_t = 0.002, #0.002 latitude/longitude ~ 200m either way in sydney
+    minpts = 1)[
+      ,`:=`(place = cluster, # rename to place
+            cluster = NULL)]
+
+#make a dictionary to convert between visits and places
+visits_to_places <- unique(na.omit(places[,.(visit, place)]))
+
+#merge the places back on top of the location/trajectory data
+location_with_visits_and_places <- 
+  merge(location_with_visits,            # merge on the only column in common, `visit`
+        visits_to_places, 
+        all.x = T)[                      # left join
+          ,`:=`(place = factor(place),   # set place and visit to be factors
+                visit = factor(visit))]
+```
+
+# Make a summary of the places we've found
+
+```{r}
+#data.table summary table of places
+places_summary <-
+  location_with_visits_and_places[         # dplyr equivalents:
+    !is.na(visit),                         #  filter(!is.na(visit))
+    .(n = .N,                              #  summarise(n = n(),
+      latitude = mean(latitude),           #            latitude = mean(latitude),
+      longitude = mean(longitude),         #            longitude = mean(longitude),
+      time_spent = sum(time_inc,na.rm = T),#            time_spent = sum(time_inc,na.rm = T),
+      visits = length(unique(visit)),      #            visits = length(unique(visit)),
+      google_label = mode(name)),          #            google_label = mode(name))
+    by=place]                              # group_by(place)
+```
+
+So what does it look like?
+```{r}
+places_summary[,.(place, google_label, visits, latitude, longitude, time_spent)]
+```
+We can see that I made 4 visits home (or had GPS on on 4 separate occasions), and Coogee beach has been absorbed into Coogee Pavillion, becasue of the 200m radius in generating `places`.
+
+# Plot trajectory and places on a leaflet map
+
+```{r}
+# order by time
+setkey(location_with_visits_and_places, time)
+
+# plot on leaflet map
+leaflet(data = places_summary) %>% 
+  addProviderTiles("OpenStreetMap.Mapnik") %>% 
+  addMarkers(popup = ~paste0("Time spent: ",round(time_spent/60, 1), " hours.<br>",
+                             "Location ",place,": ",google_label,"<br>",
+                             "Visits: ", visits)) %>% 
+  addPolylines(data = location_with_visits_and_places, 
+               lat = ~latitude, 
+               lng = ~longitude)
+```
+
