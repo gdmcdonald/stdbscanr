@@ -279,8 +279,8 @@ get_clusters_from_data <- function(df
   terminating_pts = setdiff(unique(reachables_without_noise$second), core_pts)
   point_type = data.table(point = c(core_pts,
                                     terminating_pts),
-                          type = c(rep("core", length(core_pts)),
-                                   rep("terminating", length(terminating_pts))))
+                          point_type = c(rep("core", length(core_pts)),
+                                         rep("terminating", length(terminating_pts))))
 
   # initially set cluster_id to first index
   clusters <- reachables_without_noise[,cluster:=first]
@@ -291,15 +291,20 @@ get_clusters_from_data <- function(df
   #iterate until final clusters are here
   clusters <- find_equilibrium_clusters(clusters = clusters)
 
+  #remove seconds with two different clusters - take the first
+  #(this is becasue terminating points can belong to two disconnected clusters)
+  deduped_clusters <- clusters[,.SD[1],by = second]
+
   #rename the clusters to be sequential starting from 1
-  cluster_numbers_old <- na.omit(unique(clusters$cluster))
+  cluster_numbers_old <- na.omit(unique(deduped_clusters$cluster))
   cluster_numbers_new <- 1:length(cluster_numbers_old)
   names(cluster_numbers_new) <- cluster_numbers_old
 
   #extract just the point ids and the cluster they belong to
-  point_to_clust <- unique(clusters[,.(point_id = second,
-                                       cluster = cluster_numbers_new[as.character(cluster)])])
+  point_to_clust <- unique(deduped_clusters[,.(point_id = second,
+                                               cluster = cluster_numbers_new[as.character(cluster)])])
 
+  #relabel the clusters to be sequential starting from 1
   temp <- data.table::merge.data.table(x = df,
                                        y = point_to_clust[,.(point_id,
                                                              cluster)],
@@ -307,11 +312,16 @@ get_clusters_from_data <- function(df
                                        by.y = "point_id",
                                        all.x = T)
 
+  # give each point a type - core, terminating or noise.
   temp2 <- data.table::merge.data.table(x = temp,
                                         y = point_type,
                                         by.x = "id",
                                         by.y = "point",
                                         all.x = T)
+  temp2$point_type[is.na(temp2$point_type)] <- "noise"
+  temp2$point_type <- factor(temp2$point_type,
+                             ordered = T,
+                             levels = c("core","terminating","noise"))
 
   df_out <- data.table::merge.data.table(x = temp2,
                                          y = point_density,
