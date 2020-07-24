@@ -40,7 +40,7 @@ find_temporally_connected_points<-function(vec, eps_t){
 
   #collapse the sparse simmilarity list into a data.table
   names(sparse_sim) <- 1:length(vec)
-  sparse_sim <- stack(sparse_sim)
+  sparse_sim <- utils::stack(sparse_sim)
   data.table::setDT(sparse_sim)
 
   #return just the columns we need
