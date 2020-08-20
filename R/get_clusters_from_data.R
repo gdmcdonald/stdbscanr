@@ -147,39 +147,6 @@ remove_noise <- function(reachables, min_number = 4){
   return(noise_free_reachables)
 }
 
-#' One cluster iteration
-#'
-#' One iteration of finding connected groups of points and labelling them as the same cluster.
-#' Takes a data.table of clusters and merges it with itself to find the next layer of connections,
-#' and relables clusters with the minimum of their two previous cluster numbers.
-#'
-#' @param clusters data.table of connections with columns `first`, `second` and `cluster`
-#' @return A data.table of connections with columns `first`, `second` and `cluster`,  in which the cluster numbers have been updated.
-cluster_iteration <- function(clusters){
-
-  # One row per t=(n-1) seed-cluster connection
-  clusters2<-unique(clusters[,.(first,cluster)])
-
-  # Merge with itself and take minimum cluster number
-  # to get t=n seed-cluster connection
-  clusters_second <- data.table::merge.data.table(clusters,
-                                                  clusters2,
-                                                  by.x = "second",
-                                                  by.y = "first",
-                                                  suffixes = c("1","2"),
-                                                  all.x = T)
-
-  clusters_third <- clusters_second[
-    ,cluster:=pmin(cluster1,
-                   cluster2,
-                   na.rm = T),
-    by=cluster1][
-      ,cluster:=min(.SD[,cluster],
-                     na.rm = T),
-      by=cluster1]
-
-  return(clusters_third[,.(first, second, cluster)])
-}
 
 #' Find final equilibrium clusters
 #'
@@ -300,9 +267,6 @@ get_clusters_from_data <- function(df
   # initially set cluster_id to first index
   clusters_core <- copy(reachables_without_noise[second %in% core_pts,])[,cluster:=first]
   clusters_terminating <- copy(reachables_without_noise[second %in% terminating_pts,])
-
-  #sort by first for faster merge
-  setkey(clusters,first)
 
   #iterate until final clusters are here
   clusters_core <- find_equilibrium_clusters(clusters = clusters_core)
