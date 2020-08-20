@@ -275,7 +275,7 @@ get_clusters_from_data <- function(df
   #get cluster number for every second from each core point it is connected to
   clusters_terminating2 <-
     data.table::merge.data.table(clusters_terminating,
-                                 deduped_clusters_core,
+                                 clusters_core,
                                  by.x = "first",
                                  by.y = "second",
                                  suffixes = c("1","2"),
@@ -288,7 +288,7 @@ get_clusters_from_data <- function(df
                              by = second]$V1]
 
 
-  clusters <- rbindlist(list(deduped_clusters_core,
+  clusters <- rbindlist(list(clusters_core,
                              clusters_terminating3[,.(second,cluster)]),
                         use.names = T)
 
