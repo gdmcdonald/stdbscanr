@@ -158,20 +158,25 @@ remove_noise <- function(reachables, min_number = 4){
 cluster_iteration <- function(clusters){
 
   # One row per t=(n-1) seed-cluster connection
-  cluster2<-unique(clusters[,.(first,cluster)])
+  clusters2<-unique(clusters[,.(first,cluster)])
 
   # Merge with itself and take minimum cluster number
   # to get t=n seed-cluster connection
   clusters_second <- data.table::merge.data.table(clusters,
-                                                  cluster2,
+                                                  clusters2,
                                                   by.x = "second",
                                                   by.y = "first",
                                                   suffixes = c("1","2"),
                                                   all.x = T)
 
-  clusters_third <- clusters_second[,cluster:=min(c(cluster1,
-                                                    cluster2),
-                                                  na.rm = T),by=first]
+  clusters_third <- clusters_second[
+    ,cluster:=pmin(cluster1,
+                   cluster2,
+                   na.rm = T),
+    by=cluster1][
+      ,cluster:=min(.SD[,cluster],
+                     na.rm = T),
+      by=cluster1]
 
   return(clusters_third[,.(first, second, cluster)])
 }
@@ -192,15 +197,25 @@ find_equilibrium_clusters <- function(clusters){
     #store a copy of before the iteration to compare to afterwards
     clusters_old <- clusters
 
-    #iterate giving the cluster labels of firsts to their seconds
-    clusters <- cluster_iteration(clusters = clusters_old)
+    #iterate by finding the min cluster label of a first or of a second
+    clusters <- clusters[ , .(first,cluster=min(cluster)), by = second]
+    clusters <- clusters[ , .(second,cluster=min(cluster)), by = first]
 
     #if nothing changed in an iteration, we are done!
-    if (T==all.equal(clusters_old, clusters)) break
+      if (T==all.equal(clusters_old, clusters)){
+
+        #also check that each second only has one cluster number
+        deduped_clusters <- clusters[,.(count = .N),by = list(second,cluster)]
+        if (nrow(deduped_clusters)==length(unique(deduped_clusters$second))) {
+          break
+        }else{
+          stop("Error - multiple clusters found for each core point")
+        }
+      }
   }
   message(iter_count," iterations to equilibrium cluster configuration")
 
-  return(clusters)
+  return(deduped_clusters)
 }
 
 
@@ -283,25 +298,48 @@ get_clusters_from_data <- function(df
                                          rep("terminating", length(terminating_pts))))
 
   # initially set cluster_id to first index
-  clusters <- reachables_without_noise[,cluster:=first]
+  clusters_core <- copy(reachables_without_noise[second %in% core_pts,])[,cluster:=first]
+  clusters_terminating <- copy(reachables_without_noise[second %in% terminating_pts,])
 
   #sort by first for faster merge
   setkey(clusters,first)
 
   #iterate until final clusters are here
-  clusters <- find_equilibrium_clusters(clusters = clusters)
+  clusters_core <- find_equilibrium_clusters(clusters = clusters_core)
+
+  #deal with terminating points
+  #get cluster number for every second from each core point it is connected to
+  clusters_terminating2 <-
+    data.table::merge.data.table(clusters_terminating,
+                                 deduped_clusters_core,
+                                 by.x = "first",
+                                 by.y = "second",
+                                 suffixes = c("1","2"),
+                                 all.x = T)
+
+  #keep only only min cluster number for each second
+  clusters_terminating3 <-
+    clusters_terminating2[
+      clusters_terminating2[ , .I[which.min(cluster)],
+                             by = second]$V1]
+
+
+  clusters <- rbindlist(list(deduped_clusters_core,
+                             clusters_terminating3[,.(second,cluster)]),
+                        use.names = T)
+
 
   #remove seconds with two different clusters - take the first
   #(this is becasue terminating points can belong to two disconnected clusters)
-  deduped_clusters <- clusters[,.SD[1],by = second]
+  #clusters <- clusters[,.SD[1],by = second]
 
   #rename the clusters to be sequential starting from 1
-  cluster_numbers_old <- na.omit(unique(deduped_clusters$cluster))
+  cluster_numbers_old <- na.omit(unique(clusters$cluster))
   cluster_numbers_new <- 1:length(cluster_numbers_old)
   names(cluster_numbers_new) <- cluster_numbers_old
 
   #extract just the point ids and the cluster they belong to
-  point_to_clust <- unique(deduped_clusters[,.(point_id = second,
+  point_to_clust <- unique(clusters[,.(point_id = second,
                                                cluster = cluster_numbers_new[as.character(cluster)])])
 
   #relabel the clusters to be sequential starting from 1
@@ -332,7 +370,7 @@ get_clusters_from_data <- function(df
   # test we get one row out per row in...
   if (nrow(df_out)!=nrow(df)){
     warning("Incorrect number of rows output - need to debug!")
-    }
+  }
 
   return(df_out[,id:=NULL])
 }
