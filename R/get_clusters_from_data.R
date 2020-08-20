@@ -269,7 +269,7 @@ get_clusters_from_data <- function(df
   clusters_terminating <- copy(reachables_without_noise[second %in% terminating_pts,])
 
   #iterate until final clusters are here
-  clusters_core <- find_equilibrium_clusters(clusters = clusters_core)
+  clusters_core <- find_equilibrium_clusters(clusters = clusters_core)[,.(second, cluster)]
 
   #deal with terminating points
   #get cluster number for every second from each core point it is connected to
