@@ -16,7 +16,7 @@ The algorithm follows the paper below:
 
 Previous implementations of the ST-DBSCAN clustering algorithm compute the entire distance matrix before taking points within the given radius, which makes them scale as O(n^2)​ in both memory and time, becoming prohibitive for large data sets.
 
-This implementation leverages sorted time data and only computes spatial distances for points which have not already been excluded by being too far apart in time, drasticallly speeding up compute time and lowering memory consumption, so it now scales as O(n * `eps_t`) and as `eps_t` is typically small, it practically scales as O(n), linear in the input data.
+This implementation leverages sorted time data and only computes spatial distances for points which have not already been excluded by being too far apart in time, drastically speeding up compute time and lowering memory consumption, so it now scales as O(n * `eps_t`) and as `eps_t` is typically small, it practically scales as O(n), linear in the input data.
 
 
 ## Installation
